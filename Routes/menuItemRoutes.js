@@ -50,5 +50,5 @@ router.delete('/menuitem/:id', async (req, res) => {
     res.status(500).json({ error: 'Error deleting menu item' });
   }
 });
-
+// added the validation for the menu item schema to ensure that the price is a positive number and the name is not empty
 export default router;

@@ -23,7 +23,7 @@ const personSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  adress:{
+  address:{
     type: String,
     required: true
   },
