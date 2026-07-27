@@ -6,7 +6,7 @@ import MenuItem from './Models/MenuItem.js';
 import bodyParser from 'body-parser';
 import personRoutes from './Routes/personRoutes.js';
 import menuItemRoutes from './Routes/menuItemRoutes.js';
-
+import dotenv from 'dotenv';
 const app = express();
 app.use(bodyParser.json());
 app.get('/', (req, res) => {
@@ -15,6 +15,7 @@ app.get('/', (req, res) => {
 
 app.use('/person', personRoutes);
 app.use('/menuitem', menuItemRoutes);
-app.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

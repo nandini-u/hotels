@@ -3,12 +3,26 @@ import Person from '../Models/person.js';
 
 const router = express.Router();
 
-router.post('/person', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const data = req.body;
-    const newPerson = new Person(data);
+    const normalizedEmail = data?.email ? String(data.email).trim().toLowerCase() : '';
+
+    if (!normalizedEmail) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const existingPerson = await Person.findOne({ email: normalizedEmail });
+    if (existingPerson) {
+      return res.status(409).json({
+        error: 'Duplicate email address',
+        message: 'A person with this email already exists. Use PUT with the existing ID to update the record.'
+      });
+    }
+
+    const newPerson = new Person({ ...data, email: normalizedEmail });
     const person = await newPerson.save();
-    res.status(200).json(person);
+    res.status(201).json(person);
   } catch (err) {
     console.error('Error saving person', err);
 
@@ -24,7 +38,7 @@ router.post('/person', async (req, res) => {
   }
 });
 
-router.get('/person', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const persons = await Person.find();
     res.status(200).json(persons);
@@ -34,7 +48,7 @@ router.get('/person', async (req, res) => {
   }
 });
 
-router.get('/person/:workType', async (req, res) => {
+router.get('/:workType', async (req, res) => {
   const workType = req.params.workType;
   if (workType === 'chef' || workType === 'waiter' || workType === 'manager') {
     try {
@@ -48,31 +62,50 @@ router.get('/person/:workType', async (req, res) => {
     res.status(400).json({ error: 'Invalid work type' });
   }
 });
-router.put('/person/:id', async (req, res) => {
+
+router.put('/:id', async (req, res) => {
   try {
     const personId = req.params.id;
-    const updatedData = req.body;
+    const updatedData = { ...req.body };
+
+    if (updatedData?.email) {
+      updatedData.email = String(updatedData.email).trim().toLowerCase();
+      const duplicatePerson = await Person.findOne({ email: updatedData.email, _id: { $ne: personId } });
+      if (duplicatePerson) {
+        return res.status(409).json({
+          error: 'Duplicate email address',
+          message: 'Another person already uses this email address.'
+        });
+      }
+    }
+
     const person = await Person.findByIdAndUpdate(personId, updatedData, { new: true, runValidators: true });
-    res.status(200).json(person);
     if (!person) {
       return res.status(404).json({ error: 'Person not found' });
     }
+
+    res.status(200).json(person);
   } catch (err) {
     console.error('Error updating person', err);
+    if (err?.code === 11000) {
+      return res.status(409).json({ error: 'Duplicate email address' });
+    }
     res.status(500).json({ error: 'Error updating person' });
   }
 });
-router.delete('/person/:id', async (req, res) => {
+
+router.delete('/:id', async (req, res) => {
   try {
     const personId = req.params.id;
     const person = await Person.findByIdAndDelete(personId);
-    res.status(200).json(person);
     if (!person) {
       return res.status(404).json({ error: 'Person not found' });
     }
+    res.status(200).json(person);
   } catch (err) {
     console.error('Error deleting person', err);
     res.status(500).json({ error: 'Error deleting person' });
   }
 });
+
 export default router;
